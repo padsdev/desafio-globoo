@@ -1,9 +1,8 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { ClientProxy } from '@nestjs/microservices';
 
 export interface JwtPayload {
   sub: string;
@@ -17,7 +16,7 @@ export interface JwtPayload {
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService,
-    private httpService: HttpService,
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -27,33 +26,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: JwtPayload) {
-    // Validate user exists by calling auth-service
-    try {
-      const authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL', 'http://auth-service:3002');
-      const response = await firstValueFrom(
-        this.httpService.get(`${authServiceUrl}/auth/validate`, {
-          headers: {
-            Authorization: `Bearer ${this.configService.get<string>('JWT_SECRET')}`,
-          },
-        }),
-      );
-
-      if (!response.data || !(response.data as any).valid) {
-        throw new UnauthorizedException('Invalid token');
-      }
-
-      return {
-        id: payload.sub,
-        email: payload.email,
-        username: payload.username,
-      };
-    } catch (error: any) {
-      // If auth-service is not available, validate payload only
-      return {
-        id: payload.sub,
-        email: payload.email,
-        username: payload.username,
-      };
-    }
+    // Simply return the user data from JWT payload
+    // The JWT itself is already validated by passport-jwt
+    return {
+      id: payload.sub,
+      email: payload.email,
+      username: payload.username,
+    };
   }
 }

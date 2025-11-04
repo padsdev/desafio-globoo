@@ -25,7 +25,7 @@ import { Comment } from './tasks/comment.entity';
         password: configService.get<string>('DATABASE_PASSWORD', 'password'),
         database: configService.get<string>('DATABASE_NAME', 'challenge_db'),
         entities: [User, Task, Comment],
-        synchronize: configService.get<boolean>('DATABASE_SYNCHRONIZE', false),
+        synchronize: true, // Auto-create tables in development
         logging: configService.get<boolean>('DATABASE_LOGGING', false),
         autoLoadEntities: true,
       }),

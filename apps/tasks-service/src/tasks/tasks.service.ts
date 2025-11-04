@@ -4,6 +4,7 @@ import {
   BadRequestException,
   ForbiddenException,
 } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
 import { Task } from './task.entity';
@@ -37,7 +38,11 @@ export class TasksService {
     // Verify author exists
     const author = await this.usersRepository.findOne({ where: { id: authorId } });
     if (!author) {
-      throw new NotFoundException('Author not found');
+      throw new RpcException({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Author not found',
+      });
     }
 
     // Verify assigned users exist
@@ -48,7 +53,11 @@ export class TasksService {
       });
 
       if (assignedUsers.length !== createTaskDto.assignedUserIds.length) {
-        throw new BadRequestException('One or more assigned users not found');
+        throw new RpcException({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'One or more assigned users not found',
+        });
       }
     }
 
@@ -120,7 +129,11 @@ export class TasksService {
     });
 
     if (!task) {
-      throw new NotFoundException(`Task with ID ${id} not found`);
+      throw new RpcException({
+        statusCode: 404,
+        error: 'Not Found',
+        message: `Task with ID ${id} not found`,
+      });
     }
 
     return task;
@@ -138,7 +151,11 @@ export class TasksService {
 
     // Check if user is the author
     if (task.authorId !== userId) {
-      throw new ForbiddenException('You can only update your own tasks');
+      throw new RpcException({
+        statusCode: 403,
+        error: 'Forbidden',
+        message: 'You can only update your own tasks',
+      });
     }
 
     // Update assigned users if provided
@@ -148,7 +165,11 @@ export class TasksService {
       });
 
       if (assignedUsers.length !== updateTaskDto.assignedUserIds.length) {
-        throw new BadRequestException('One or more assigned users not found');
+        throw new RpcException({
+          statusCode: 400,
+          error: 'Bad Request',
+          message: 'One or more assigned users not found',
+        });
       }
 
       task.assignedUsers = assignedUsers;
@@ -174,7 +195,11 @@ export class TasksService {
 
     // Check if user is the author
     if (task.authorId !== userId) {
-      throw new ForbiddenException('You can only delete your own tasks');
+      throw new RpcException({
+        statusCode: 403,
+        error: 'Forbidden',
+        message: 'You can only delete your own tasks',
+      });
     }
 
     await this.tasksRepository.remove(task);
@@ -194,7 +219,11 @@ export class TasksService {
     // Verify author exists
     const author = await this.usersRepository.findOne({ where: { id: authorId } });
     if (!author) {
-      throw new NotFoundException('Author not found');
+      throw new RpcException({
+        statusCode: 404,
+        error: 'Not Found',
+        message: 'Author not found',
+      });
     }
 
     // Create comment

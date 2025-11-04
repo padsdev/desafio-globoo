@@ -38,9 +38,9 @@ export class TasksController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   create(
     @Body() createTaskDto: CreateTaskDto,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.create(createTaskDto, userId);
+    return this.tasksService.create(createTaskDto, user.id);
   }
 
   @Get()
@@ -49,9 +49,9 @@ export class TasksController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findAll(
     @Query() queryParams: QueryParamsDto,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.findAll(queryParams, userId);
+    return this.tasksService.findAll(queryParams, user.id);
   }
 
   @Get(':id')
@@ -62,9 +62,9 @@ export class TasksController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   findOne(
     @Param('id') id: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.findOne(id, userId);
+    return this.tasksService.findOne(id, user.id);
   }
 
   @Patch(':id')
@@ -78,9 +78,9 @@ export class TasksController {
   update(
     @Param('id') id: string,
     @Body() updateTaskDto: UpdateTaskDto,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.update(id, updateTaskDto, userId);
+    return this.tasksService.update(id, updateTaskDto, user.id);
   }
 
   @Delete(':id')
@@ -92,9 +92,9 @@ export class TasksController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   remove(
     @Param('id') id: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.remove(id, userId);
+    return this.tasksService.remove(id, user.id);
   }
 
   @Post(':id/comments')
@@ -107,9 +107,9 @@ export class TasksController {
   createComment(
     @Param('id') taskId: string,
     @Body() createCommentDto: CreateCommentDto,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.createComment(taskId, createCommentDto, userId);
+    return this.tasksService.createComment(taskId, createCommentDto, user.id);
   }
 
   @Get(':id/comments')
@@ -120,8 +120,8 @@ export class TasksController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   getComments(
     @Param('id') taskId: string,
-    @CurrentUser('sub') userId: string,
+    @CurrentUser() user: any,
   ) {
-    return this.tasksService.getComments(taskId, userId);
+    return this.tasksService.getComments(taskId, user.id);
   }
 }

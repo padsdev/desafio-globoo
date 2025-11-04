@@ -18,7 +18,7 @@ services:
       - NODE_ENV=development
     networks:
       - challenge-network
-    command: pnpm --filter web dev --host 0.0.0.0
+    command: pnpm --filter web dev -H 0.0.0.0
 
   # API Gateway
   api-gateway:
@@ -144,6 +144,9 @@ services:
       - DATABASE_PASSWORD=password
       - DATABASE_NAME=challenge_db
       - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672
+      - JWT_ACCESS_SECRET=your-super-secret-jwt-key-change-in-production
+      - JWT_REFRESH_SECRET=your-super-secret-refresh-key-change-in-production
+      - CORS_ORIGIN=http://localhost:3000
     depends_on:
       db:
         condition: service_started

@@ -1,54 +1,41 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
+import { RpcExceptionFilterService } from './common/filters/rpc-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.createMicroservice<MicroserviceOptions>(
+    AppModule,
+    {
+      transport: Transport.RMQ,
+      options: {
+        urls: ['amqp://admin:admin@rabbitmq:5672'], 
+        queue: 'tasks_queue', 
+        queueOptions: {
+          durable: true,
+        },
+      },
+    },
+  );
 
-  // Enable CORS for API Gateway communication
-  app.enableCors({
-    origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
-    credentials: true,
-  });
+  // Global exception filter
+  app.useGlobalFilters(new RpcExceptionFilterService());
 
   // Global validation pipe for all endpoints
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // Strip properties that don't have decorators
-      forbidNonWhitelisted: true, // Throw error if non-whitelisted properties are present
-      transform: true, // Automatically transform payloads to DTO instances
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
       transformOptions: {
-        enableImplicitConversion: true, // Convert primitive types automatically
+        enableImplicitConversion: true,
       },
     }),
   );
 
-  // Swagger API documentation
-  const config = new DocumentBuilder()
-    .setTitle('Tasks Service API')
-    .setDescription('Microservice for task management with comments and assignments')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT token',
-        in: 'header',
-      },
-      'JWT-auth', // This name here is important for matching up with @ApiBearerAuth() in your controller!
-    )
-    .build();
+  await app.listen();
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
-  const port = process.env.PORT ?? 3003;
-  await app.listen(port);
-
-  console.log(`🚀 Tasks Service is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`);
+  console.log('🎧 Tasks microservice is listening on RabbitMQ (tasks_queue)');
 }
 bootstrap();

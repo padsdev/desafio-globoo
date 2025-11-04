@@ -1,0 +1,326 @@
+{
+  "info": {
+    "name": "Desafio Globoo - Error Handling Tests",
+    "description": "Coleção para testar o tratamento de erros da API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Auth - Errors",
+      "item": [
+        {
+          "name": "Login - Credenciais Inválidas (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"usuario@email.com\",\n  \"password\": \"senhaerrada\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Email Duplicado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"username\": \"novousuario\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Tenta registrar com um email que já existe no banco"
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Validação de Campos (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"email-invalido\",\n  \"username\": \"us\",\n  \"password\": \"123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Email inválido, username muito curto, senha muito curta"
+          },
+          "response": []
+        },
+        {
+          "name": "Register - Campo Extra (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"novo@email.com\",\n  \"username\": \"novousuario\",\n  \"password\": \"senha123\",\n  \"campoInvalido\": \"valor\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Tenta enviar um campo não permitido"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Tasks - Errors",
+      "item": [
+        {
+          "name": "Get Task - Não Encontrada (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "Faça login primeiro para obter o token"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3001/api/tasks/id-inexistente",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "tasks", "id-inexistente"]
+            },
+            "description": "Tenta buscar uma tarefa que não existe"
+          },
+          "response": []
+        },
+        {
+          "name": "Create Task - Usuário Atribuído Inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "Faça login primeiro para obter o token"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Nova Tarefa\",\n  \"description\": \"Descrição da tarefa\",\n  \"priority\": \"high\",\n  \"status\": \"pending\",\n  \"assignedUserIds\": [\"id-usuario-inexistente\"]\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/tasks",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "tasks"]
+            },
+            "description": "Tenta criar tarefa com ID de usuário inválido"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks - Sem Token (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "http://localhost:3001/api/tasks",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "tasks"]
+            },
+            "description": "Tenta acessar sem autenticação"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Tasks - Token Inválido (401)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer token-invalido"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3001/api/tasks",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "tasks"]
+            },
+            "description": "Tenta acessar com token inválido"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Notifications - Errors",
+      "item": [
+        {
+          "name": "Get Notification - Não Encontrada (404)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}",
+                "description": "Faça login primeiro para obter o token"
+              }
+            ],
+            "url": {
+              "raw": "http://localhost:3001/api/notifications/id-inexistente",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "notifications", "id-inexistente"]
+            },
+            "description": "Tenta buscar uma notificação que não existe"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth - Success (para obter token)",
+      "item": [
+        {
+          "name": "Register - Sucesso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+                  "    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"teste{{$randomInt}}@email.com\",\n  \"username\": \"usuario{{$randomInt}}\",\n  \"password\": \"senha123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/auth/register",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "auth", "register"]
+            },
+            "description": "Registra um novo usuário e salva o token"
+          },
+          "response": []
+        },
+        {
+          "name": "Login - Sucesso",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    var jsonData = pm.response.json();",
+                  "    pm.environment.set(\"accessToken\", jsonData.accessToken);",
+                  "    pm.environment.set(\"refreshToken\", jsonData.refreshToken);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@example.com\",\n  \"password\": \"admin123\"\n}"
+            },
+            "url": {
+              "raw": "http://localhost:3001/api/auth/login",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "3001",
+              "path": ["api", "auth", "login"]
+            },
+            "description": "Faz login e salva o token"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3001/api",
+      "type": "string"
+    }
+  ]
+}

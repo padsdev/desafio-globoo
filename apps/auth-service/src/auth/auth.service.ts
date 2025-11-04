@@ -3,6 +3,7 @@ import {
   UnauthorizedException,
   ConflictException,
 } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/user.service';
@@ -37,7 +38,11 @@ export class AuthService {
     const user = await this.usersService.findByEmail(loginDto.email);
 
     if (!user) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new RpcException({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Credenciais inválidas',
+      });
     }
 
     // Valida a senha
@@ -47,7 +52,11 @@ export class AuthService {
     );
 
     if (!isPasswordValid) {
-      throw new UnauthorizedException('Credenciais inválidas');
+      throw new RpcException({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Credenciais inválidas',
+      });
     }
 
     // Gera os tokens
@@ -61,7 +70,11 @@ export class AuthService {
     const user = await this.usersService.findById(userId);
 
     if (!user) {
-      throw new UnauthorizedException('Usuário não encontrado');
+      throw new RpcException({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Usuário não encontrado',
+      });
     }
 
     return this.generateTokens(user);
@@ -148,7 +161,11 @@ export class AuthService {
         secret: jwtSecret,
       });
     } catch (error) {
-      throw new UnauthorizedException('Token inválido ou expirado');
+      throw new RpcException({
+        statusCode: 401,
+        error: 'Unauthorized',
+        message: 'Token inválido ou expirado',
+      });
     }
   }
 }

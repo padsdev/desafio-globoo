@@ -1,4 +1,5 @@
 import { Injectable, ConflictException, NotFoundException } from '@nestjs/common';
+import { RpcException } from '@nestjs/microservices';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './user.entity';
@@ -62,12 +63,20 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     // Valida se email já existe
     if (await this.emailExists(createUserDto.email)) {
-      throw new ConflictException('Email já está em uso');
+      throw new RpcException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'Email já está em uso',
+      });
     }
 
     // Valida se username já existe
     if (await this.usernameExists(createUserDto.username)) {
-      throw new ConflictException('Username já está em uso');
+      throw new RpcException({
+        statusCode: 409,
+        error: 'Conflict',
+        message: 'Username já está em uso',
+      });
     }
 
     // Faz o hash da senha

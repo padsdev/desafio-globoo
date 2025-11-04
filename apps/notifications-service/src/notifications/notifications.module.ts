@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { PassportModule } from '@nestjs/passport';
 import { NotificationsService } from './notifications.service';
 import { NotificationsController } from './notifications.controller';
+import { NotificationsControllerRabbitMQ } from './notifications.controller.rabbitmq';
 import { NotificationsGateway } from './notifications.gateway';
 import { NotificationsConsumerService } from './notifications-consumer.service';
 import { Notification } from './notification.entity';
@@ -25,7 +26,7 @@ import { JwtStrategy } from '../auth/strategies/jwt.strategy';
     }),
     ConfigModule,
   ],
-  controllers: [NotificationsController],
+  controllers: [NotificationsController, NotificationsControllerRabbitMQ],
   providers: [
     NotificationsService,
     NotificationsGateway,

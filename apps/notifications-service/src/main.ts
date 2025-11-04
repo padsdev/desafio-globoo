@@ -1,7 +1,8 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { MicroserviceOptions, Transport } from '@nestjs/microservices';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -11,6 +12,9 @@ async function bootstrap() {
     origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
     credentials: true,
   });
+
+  // Global exception filter
+  app.useGlobalFilters(new AllExceptionsFilter());
 
   // Global validation pipe
   app.useGlobalPipes(
@@ -24,32 +28,25 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger API documentation
-  const config = new DocumentBuilder()
-    .setTitle('Notifications Service API')
-    .setDescription('Real-time notifications with WebSocket and RabbitMQ')
-    .setVersion('1.0')
-    .addBearerAuth(
-      {
-        type: 'http',
-        scheme: 'bearer',
-        bearerFormat: 'JWT',
-        name: 'JWT',
-        description: 'Enter JWT access token',
-        in: 'header',
+  // Connect RabbitMQ microservice for inter-service communication
+  app.connectMicroservice<MicroserviceOptions>({
+    transport: Transport.RMQ,
+    options: {
+      urls: ['amqp://admin:admin@rabbitmq:5672'],
+      queue: 'notifications_queue',
+      queueOptions: {
+        durable: true,
       },
-      'JWT-auth',
-    )
-    .build();
+    },
+  });
 
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
+  await app.startAllMicroservices();
 
   const port = process.env.PORT ?? 3004;
   await app.listen(port);
 
   console.log(`🚀 Notifications Service is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/api/docs`);
+  console.log(`🎧 Notifications microservice is listening on RabbitMQ (notifications_queue)`);
   console.log(`🔌 WebSocket namespace: ws://localhost:${port}/notifications`);
 }
 bootstrap();

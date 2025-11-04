@@ -2,18 +2,28 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { AllExceptionsFilter } from './common/filters/http-exception.filter';
+import { RpcToHttpExceptionFilter } from './common/filters/rpc-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Global prefix for all routes
-  app.setGlobalPrefix('api');
-
-  // Enable CORS for frontend communication
+  // Enable CORS for frontend communication (before global prefix)
   app.enableCors({
     origin: process.env.CORS_ORIGIN?.split(',') || ['http://localhost:3000'],
     credentials: true,
   });
+
+  // Global prefix for all routes
+  app.setGlobalPrefix('api', {
+    exclude: ['/'], // Exclude root path from global prefix
+  });
+
+  // Global exception filters
+  app.useGlobalFilters(
+    new AllExceptionsFilter(),
+    new RpcToHttpExceptionFilter(),
+  );
 
   // Global validation pipe for all endpoints
   app.useGlobalPipes(

@@ -1,66 +1,42 @@
-import { Injectable, HttpException, HttpStatus, UnauthorizedException } from '@nestjs/common';
+import { Injectable, Inject, UnauthorizedException, HttpException, HttpStatus } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { HttpService } from '@nestjs/axios';
-import { firstValueFrom } from 'rxjs';
+import { ClientProxy } from '@nestjs/microservices';
+import { firstValueFrom, catchError, throwError } from 'rxjs';
 import { RegisterDto, LoginDto, AuthResponseDto } from './dto';
 
 @Injectable()
 export class AuthService {
-  private readonly authServiceUrl: string;
-
   constructor(
-    private readonly httpService: HttpService,
+    @Inject('AUTH_SERVICE') private readonly authClient: ClientProxy,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-  ) {
-    this.authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL', 'http://auth-service:3002');
-  }
-
-  /**
-   * Handles HTTP errors from auth-service
-   */
-  private handleHttpError(error: any) {
-    if (error.response) {
-      throw new HttpException(
-        error.response.data?.message || 'Error from authentication service',
-        error.response.status || HttpStatus.BAD_REQUEST,
-      );
-    }
-    throw new HttpException(
-      'Authentication service unavailable',
-      HttpStatus.SERVICE_UNAVAILABLE,
-    );
-  }
+  ) {}
 
   /**
    * Register a new user via auth-service
    */
   async register(registerDto: RegisterDto): Promise<AuthResponseDto> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.authServiceUrl}/auth/register`, registerDto),
-      );
-      return response.data;
-    } catch (error: any) {
-      this.handleHttpError(error);
-      throw error; // TypeScript requires this
-    }
+    return firstValueFrom(
+      this.authClient.send('auth.register', registerDto).pipe(
+        catchError((error) => {
+          throw this.handleRpcError(error);
+        })
+      )
+    );
   }
 
   /**
    * Login user via auth-service
    */
   async login(loginDto: LoginDto): Promise<AuthResponseDto> {
-    try {
-      const response = await firstValueFrom(
-        this.httpService.post(`${this.authServiceUrl}/auth/login`, loginDto),
-      );
-      return response.data;
-    } catch (error: any) {
-      this.handleHttpError(error);
-      throw error; // TypeScript requires this
-    }
+    return firstValueFrom(
+      this.authClient.send('auth.login', loginDto).pipe(
+        catchError((error) => {
+          throw this.handleRpcError(error);
+        })
+      )
+    );
   }
 
   /**
@@ -77,70 +53,44 @@ export class AuthService {
         throw new UnauthorizedException('Invalid token type');
       }
 
-      // Generate new tokens
-      const newPayload = {
-        sub: payload.sub,
-        email: payload.email,
-        username: payload.username,
-      };
-
-      const refreshPayload = {
-        ...newPayload,
-        type: 'refresh',
-      };
-
-      const jwtSecret = this.configService.get<string>('JWT_SECRET');
-      const jwtExpiresIn = this.configService.get<string>('JWT_EXPIRES_IN', '15m');
-      const jwtRefreshSecret = this.configService.get<string>('JWT_REFRESH_SECRET');
-      const jwtRefreshExpiresIn = this.configService.get<string>('JWT_REFRESH_EXPIRES_IN', '7d');
-
-      const [accessToken, newRefreshToken] = await Promise.all([
-        this.jwtService.signAsync(newPayload as any, {
-          secret: jwtSecret,
-          expiresIn: jwtExpiresIn as any,
-        }),
-        this.jwtService.signAsync(refreshPayload as any, {
-          secret: jwtRefreshSecret,
-          expiresIn: jwtRefreshExpiresIn as any,
-        }),
-      ]);
-
-      const expiresIn = this.parseExpirationTime(jwtExpiresIn);
-
-      return {
-        accessToken,
-        refreshToken: newRefreshToken,
-        tokenType: 'Bearer',
-        expiresIn,
-        user: {
-          id: payload.sub,
-          email: payload.email,
-          username: payload.username,
-        },
-      };
+      // Request refresh from auth service
+      return firstValueFrom(
+        this.authClient.send('auth.refresh', { userId: payload.sub }).pipe(
+          catchError((error) => {
+            throw this.handleRpcError(error);
+          })
+        )
+      );
     } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
       throw new UnauthorizedException('Invalid or expired refresh token');
     }
   }
 
   /**
-   * Parse expiration time string (e.g., '15m', '7d') to seconds
+   * Handle RPC errors and convert to HTTP exceptions
    */
-  private parseExpirationTime(time: string): number {
-    const unit = time.slice(-1);
-    const value = parseInt(time.slice(0, -1), 10);
-
-    switch (unit) {
-      case 's':
-        return value;
-      case 'm':
-        return value * 60;
-      case 'h':
-        return value * 60 * 60;
-      case 'd':
-        return value * 24 * 60 * 60;
-      default:
-        return 900; // 15 minutes default
+  private handleRpcError(error: any): HttpException {
+    if (typeof error === 'object' && error.statusCode) {
+      throw new HttpException(
+        {
+          statusCode: error.statusCode,
+          error: error.error || 'Error',
+          message: error.message || 'An error occurred',
+        },
+        error.statusCode
+      );
     }
+    
+    throw new HttpException(
+      {
+        statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+        error: 'Internal Server Error',
+        message: error.message || 'An unexpected error occurred',
+      },
+      HttpStatus.INTERNAL_SERVER_ERROR
+    );
   }
 }
